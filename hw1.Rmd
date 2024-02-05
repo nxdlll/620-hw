@@ -1,0 +1,178 @@
+---
+title: "hong cao biostat 620 hw1"
+output: html_notebook
+---
+
+
+```{r}
+data= read.csv("screentime.csv",header = T)
+head(data,5)
+```
+problem 1
+(a)
+We aim at studying individual behaviors using mobile devices such as smartphone, pads and wearable computer that measures screen use activities. 
+my hypothesis is the total social media time has a relationship with the people's outdoor time.
+reference : When the findings are analyzed, it has been found out that social media encourages travel, creates intercultural interactions and alternative leisure, incents leisure activities and facilitates making use of leisure. 
+AYDIN B, Arslan E. The role of social media on leisure preferences: A research on the participants of outdoor recreation activities[J]. Turizm Akademik Dergisi, 2016, 3(1): 1-10.
+
+
+(b)let participants know the purpose of study ,researcher of study, the risk and other information.
+tell particapants what they will do.
+
+(c) the data is collected from 12/31/2023-26/1/2024, total of 27 rows of data. included total screen time, total media tiem , daily pick times the first pick time(start form 5 am) and total video time(defime as the total time that the person watch vedio on this device).the data was all collected from the user's smartphones.
+(d)  add the variable in the excel.
+
+problem 2
+```{r}
+library(ggplot2)
+library(tidyr)
+library(dplyr)
+library(lubridate)
+library(readr)
+```
+a
+```{r}
+data$Date <- mdy(data$Date)
+
+data_long <- data %>%
+  select(Date, Total.ST.min, Social.ST.min, Pickups, proportion.Social.ST, useduration) %>%
+  pivot_longer(cols = -Date, names_to = "variable", values_to = "value")
+
+# Plot time series for each variable
+ggplot(data_long, aes(x = Date, y = value)) +
+  geom_line() +
+  facet_wrap(~variable, scales = "free_y", ncol = 1) +
+  theme_minimal() +
+  labs(x = "Date", y = "Value", title = "Time Series Plot of Screen Activity Variables")
+
+```
+there is a drop in the first week and keep constant in the following 2 weeks the there is another dorp.
+
+b
+```{r}
+library(readr)
+library(GGally)
+pairwise_plot <- ggpairs(data, columns = c("Total.ST.min", "Social.ST.min", "Pickups", "proportion.Social.ST", "useduration"))
+
+print(pairwise_plot)
+
+
+```
+pick up times and use duration have the 
+highest corr.
+
+(c)
+```{r}
+
+data <- data %>%
+  mutate(cumulative_total_screen_time = cumsum(Total.ST.min),
+         cumulative_social_screen_time = cumsum(Social.ST.min),
+         cumulative_pickups = cumsum(Pickups),
+         cumulative_proportion_social_screen_time = cumsum(proportion.Social.ST),
+         cumulative_duration_per_use = cumsum(useduration))
+
+
+plot(data$cumulative_total_screen_time, type = 'l', col = 'blue', xlab = "Observation", ylab = "Cumulative Time", main = "Occupation Time Curve")
+lines(data$cumulative_social_screen_time, col = 'red')
+lines(data$cumulative_pickups, col = 'green')
+lines(data$cumulative_proportion_social_screen_time, col = 'purple')
+lines(data$cumulative_duration_per_use, col = 'orange')
+
+
+```
+(d)
+```{r}
+library(stats)
+variables <- c("Total.ST.min", "Social.ST.min", "Pickups", "proportion.Social.ST", "useduration")
+
+acf_results <- list()
+
+for (var in variables) {
+  acf_results[[var]] <- acf(data[[var]], plot = T)
+  print(paste("ACF for", var))
+  print(acf_results[[var]])
+}
+
+
+```
+Total.ST.min,Social.ST.min,useduration have significant autocorrelations at lag 1
+
+
+
+problem3
+```{r}
+library(circular)
+time_to_degrees <- function(time) {
+  parts <- strsplit(time, ":")[[1]]
+  hour <- as.numeric(parts[1])
+  minute <- as.numeric(parts[2])
+  # Convert time to fraction of 24-hour day
+  time_fraction <- hour / 24 + minute / (24 * 60)
+  # Convert fraction of day to degrees
+  degrees <- time_fraction * 360
+  return(degrees)
+}
+
+data$first_pickup_degrees <- sapply(data$Pickup.1st.start.from.5.00, time_to_degrees)
+
+data_circular <- circular(data$first_pickup_degrees, units = "degrees", template = "clock24")
+plot(data_circular)
+
+
+
+```
+```{r}
+plot(data_circular, stack=TRUE, bins=360/2.5) 
+```
+
+
+problem 4
+a
+st is a factor to adjust the expected number of pickups according to the daily screen time, making the model more accurate for days with varying amounts of screen time.
+b
+```{r}
+library(stats)
+model <- glm(Pickups ~ offset(log(Total.ST.min)), 
+                     family = poisson(link = "log"), data = data)
+
+# Print the summary of the model to see the estimated coefficients
+summary(model)
+
+```
+```{r}
+
+loglinermodel <- glm(Pickups  ~ Xt + Zt, 
+                     family = poisson(link = "log"), data = data)
+
+summary_loglinermodel <- summary(loglinermodel)
+print(summary_loglinermodel)
+
+
+
+```
+the H0 is both Xt0=Xt1 and Zt0=Zt1, the p value is both<0.05 is significant take H1, so the behavior is different in weedkdays,weekends  and different in vacation and new semester.
+
+problem 5
+```{r}
+
+data$first_pickup_degrees <- sapply(data$Pickup.1st.start.from.5.00, time_to_degrees)
+data_circular <- circular(data$first_pickup_degrees, units = "degrees", template = "clock24")
+
+vonmises_fit <- mle.vonmises(data_circular)
+
+print(vonmises_fit)
+
+```
+
+
+```{r}
+angle_830AM <- (time_to_degrees("08:30") * 2 * pi)/360- pi
+angle_830AM_circular <- circular(angle_830AM, type = 'angles', units = 'radians')
+cdf <- pvonmises(angle_830AM_circular, vonmises_fit$mu, vonmises_fit$kappa)
+
+# The probability that the first pickup is at 8:30 AM or later
+probability <- 1 - cdf
+probability
+```
+
+
