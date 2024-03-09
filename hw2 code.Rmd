@@ -1,0 +1,71 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+hong cao
+ biostat hw2 code
+
+
+```{r}
+library(systemfit)
+library(dplyr)
+data= read.csv("screentime.csv",header = T)
+head(data,5)
+```
+a
+```{r}
+Y1_lag1 <- c(NA, data$Total.ST.min[-nrow(data)])
+Y2_lag1 <- c(NA, data$Social.ST.min[-nrow(data)])
+```
+
+```{r}
+sur_model1 <- systemfit(Total.ST.min ~ Y1_lag1 + Xt + Zt, "SUR", data = data)
+summary(sur_model1)
+```
+in model 1, only the p value of intercept is < 0.05 is significant,suggesting that the average value of the response variable is significantly different from zero. the other term is not significant means that they are not have a significant effect on total screen time.
+```{r}
+sur_model2 <- systemfit(Social.ST.min ~ Y2_lag1 + Xt + Zt, "SUR", data = data)
+summary(sur_model2)
+```
+b
+in model 1, only the p value of intercept is < 0.05 is significant,suggesting that the average value of the response variable is significantly different from zero. the other term is not significant means that they are not have a significant effect on total screen time.
+
+in model 2 except intercept the Y2_lag1 p value is significant （0.0242388） ,< 0.05 means it have significant effect on total social screen time
+
+
+```{r}
+C_matrix <- matrix(c(0, 0, 0, 1), nrow = 1, byrow = TRUE)
+vcov_matrix <- vcov(sur_model1)
+wald_stat <- t(C_matrix %*% coef(sur_model1)) %*% solve(C_matrix %*% vcov_matrix %*% t(C_matrix)) %*% (C_matrix %*% coef(sur_model1))
+df <- nrow(C_matrix)
+p_value <- 1 - pchisq(wald_stat, df)
+p_value
+```
+```{r}
+C_matrix <- matrix(c(0, 0, 0, 1), nrow = 1, byrow = TRUE)
+vcov_matrix <- vcov(sur_model2)
+wald_stat <- t(C_matrix %*% coef(sur_model2)) %*% solve(C_matrix %*% vcov_matrix %*% t(C_matrix)) %*% (C_matrix %*% coef(sur_model2))
+df <- nrow(C_matrix)
+p_value <- 1 - pchisq(wald_stat, df)
+p_value
+```
+both model's hypothesis test for Zt shows that the p value is large than 0.05 which means we can not reject H0,Zt is not a significant predictor.
+
+
+
+4d
+```{r}
+data = [(Z1, X1, Y1) to  (Zn, Xn, Yn)]
+num_bootstraps = 1000
+bootstrap_estimates = []
+
+for i in 1 to num_bootstraps do:
+    bootstrap_sample = sample_with_replacement(original_data, size=n)
+    # CACULATE alpha_hat
+    # CACULATE beta_hat
+    beta_iv_star = beta_hat / alpha_hat
+    append(bootstrap_estimates, beta_iv_star)
+
+variance_beta_iv = variance(bootstrap_estimates)
+
+```
