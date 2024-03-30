@@ -1,0 +1,329 @@
+---
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+---
+problem1 is in another document
+
+problen2
+a
+```{r}
+A <- c(1, 1, 1, 1, 0, 0, 0, 0,0)
+mrate <- c(11, 14, 24, 20, 26, 20, 3, 7,8)
+hcover <- c(0.06, 0.07, 0.06, 0.07, 0.07, 0.06, 0.02, 0.02, 0.01)
+pcdocs <- c(0.02, 0.01, 0.02, 0.01, 0.02, 0.01, 0.04, 0.04, 0.05)
+data=cbind(A, mrate, hcover, pcdocs)
+mydata=data.frame(data)
+psmodel <- glm(A ~ hcover + pcdocs, family=binomial, data = mydata)
+summary(psmodel)
+pscore <- round(psmodel$fitted,3)
+print(pscore)
+```
+
+
+```{r}
+pscorematch <- function(data,A) {
+  df <- cbind(data, pscore)
+  match <- list()
+  controls <- which(A == 0)
+  
+  for (i in which(A == 1)) {
+    ps_diff <- abs(pscore[i] - df$pscore[controls])
+    greed <- controls[which.min(ps_diff)]
+    match[[i]] <- c(i, greed)
+    controls <- which(A == 0) 
+    controls <- controls[-which(controls == greed)]
+  }
+  return(list(Match.pairs = match, Propensity = pscore))
+}
+result1 = pscorematch(data = mydata, A = mydata$A)
+print(result1$Match.pairs)
+print(result1$Propensity)
+```
+b
+```{r}
+  treatment <- mydata$mrate[unlist(sapply(result1$Match.pairs, function(x) x[1]))]
+  control <- mydata$mrate[unlist(sapply(result1$Match.pairs, function(x) x[2]))]
+  ate <- mean(treatment) - mean(control)
+  n <- length(result1$Match.pairs)
+  n_treatment <- length(treatment)
+  n_control <- length(control)
+  sd <- sqrt(var(treatment) / n_treatment + var(control) / n_control)
+  standard_error <- sd / sqrt(n)
+  t_stat <- ate / standard_error
+  df <- n - 1
+  p_value <- 2 * pt(-abs(t_stat), df)
+  print(ate)
+  print(sd)
+  print(p_value)
+```
+c
+```{r}
+pscore = psmodel$fitted
+A = mydata[,1]
+
+# Computing propensity scores for both groups
+pscore1 = pscore[A==1]
+pscore0 = pscore[A==0]
+
+# Generating histograms for both groups
+hpscore1 = hist(pscore1)
+hpscore0 = hist(pscore0)
+
+# Making the counts of the second histogram negative
+hpscore0$counts = -hpscore0$counts
+
+# Plotting the histogram for the first group
+plot(hpscore1, xlab="propensity scores", xlim=c(0.1,0.9), ylim=c(-1,1),
+     col="red", main="Histograms of propensity scores")
+
+# Adding the histogram for the second group to the plot
+lines(hpscore0, col="blue")
+```
+```{r}
+library(Matching)
+library(MatchIt)
+match.out= matchit(A ~ hcover+pcdocs,data=mydata, method="nearest")
+summary(match.out)
+plot(match.out, type="jitter")
+plot(match.out, type="hist")
+```
+```{r}
+numerator <- abs(mean(treatment) - mean(control))
+denominator <- sqrt((sd(treatment)^2 + sd(control)^2)/2)
+smd <- numerator/denominator
+smd
+```
+d merge them together
+```{r}
+pscorematch <- function(data,A) {
+  df <- cbind(data, pscore)
+  match <- list()
+  controls <- which(A == 0)
+  
+  for (i in which(A == 1)) {
+    ps_diff <- abs(pscore[i] - df$pscore[controls])
+    greed <- controls[which.min(ps_diff)]
+    match[[i]] <- c(i, greed)
+    controls <- which(A == 0) 
+    controls <- controls[-which(controls == greed)]
+  }
+  return(list(Match.pairs = match, Propensity = pscore))
+}
+result1 = pscorematch(data = mydata, A = mydata$A)
+print(result1$Match.pairs)
+print(result1$Propensity)
+ treatment <- mydata$mrate[unlist(sapply(result1$Match.pairs, function(x) x[1]))]
+  control <- mydata$mrate[unlist(sapply(result1$Match.pairs, function(x) x[2]))]
+  ate <- mean(treatment) - mean(control)
+  n <- length(result1$Match.pairs)
+  n_treatment <- length(treatment)
+  n_control <- length(control)
+  sd <- sqrt(var(treatment) / n_treatment + var(control) / n_control)
+  standard_error <- sd / sqrt(n)
+  t_stat <- ate / standard_error
+  df <- n - 1
+  p_value <- 2 * pt(-abs(t_stat), df)
+  print(ate)
+  print(sd)
+  print(p_value)
+  pscore = psmodel$fitted
+A = mydata[,1]
+
+# Computing propensity scores for both groups
+pscore1 = pscore[A==1]
+pscore0 = pscore[A==0]
+
+# Generating histograms for both groups
+hpscore1 = hist(pscore1)
+hpscore0 = hist(pscore0)
+
+# Making the counts of the second histogram negative
+hpscore0$counts = -hpscore0$counts
+
+# Plotting the histogram for the first group
+plot(hpscore1, xlab="propensity scores", xlim=c(0.1,0.9), ylim=c(-1,1),
+     col="red", main="Histograms of propensity scores")
+
+# Adding the histogram for the second group to the plot
+lines(hpscore0, col="blue")
+numerator <- abs(mean(treatment) - mean(control))
+denominator <- sqrt((sd(treatment)^2 + sd(control)^2)/2)
+smd <- numerator/denominator
+smd
+```
+
+problem3
+```{r,warning=FALSE}
+library(readxl)
+library(ggplot2)
+library(dplyr)
+library(Matching)
+library(boot)
+screentime <- read_excel("ScreenTime-hw3Q3.xlsx", sheet="ScreenTime")
+baseline <- read_excel("ScreenTime-hw3Q3.xlsx", sheet="Baseline")
+mydata2 <- merge(screentime, baseline, by="pseudo_id")
+
+```
+
+```{r}
+mydata2_ap <-mydata2[mydata2$Treatment != "B",]
+mydata2_bp <-mydata2[mydata2$Treatment != "A",]
+mydata2_ap$Treatment <- ifelse(mydata2_ap$Treatment == "A", 1, 0)
+mydata2_bp$Treatment <- ifelse(mydata2_bp$Treatment == "B", 1, 0)
+
+```
+a
+ap
+```{r}
+ap_model <- glm(Treatment ~ sex + age + pets + siblings, family=binomial(), data=mydata2_ap)
+pscore_ap <- round(ap_model$fitted,3)
+pscorematch_ap <- function(data,A) {
+  df <- cbind(data, pscore_ap)
+  match <- list()
+  controls <- which(A == 0)
+  
+  for (i in which(A == 1)) {
+    ps_diff <- abs(pscore_ap[i] - df$pscore_ap[controls])
+    greed <- controls[which.min(ps_diff)]
+    match[[i]] <- c(i, greed)
+    controls <- which(A == 0) 
+    controls <- controls[-which(controls == greed)]
+  }
+  return(list(Match.pairs = match, Propensity = pscore_ap))
+}
+
+result2 = pscorematch_ap(data = mydata2_ap, A = mydata2_ap$Treatment)
+print(result2$Match.pairs)
+print(result2$Propensity)
+reatment <- mydata2_bp$Treatment[unlist(sapply(result2$Match.pairs, function(x) x[1]))]
+control <- mydata2_bp$Treatment[unlist(sapply(result2$Match.pairs, function(x) x[2]))]
+numerator <- abs(mean(treatment) - mean(control))
+denominator <- sqrt((sd(treatment)^2 + sd(control)^2)/2)
+smd <- numerator/denominator
+smd
+```
+a 
+bp
+```{r}
+bp_model <- glm(Treatment ~ sex + age + pets + siblings, family=binomial(), data=mydata2_bp)
+pscore_bp <- round(bp_model$fitted,3)
+pscorematch_bp <- function(data,A) {
+  df <- cbind(data, pscore_bp)
+  match <- list()
+  controls <- which(A == 0)
+  
+  for (i in which(A == 1)) {
+    ps_diff <- abs(pscore_bp[i] - df$pscore_bp[controls])
+    greed <- controls[which.min(ps_diff)]
+    match[[i]] <- c(i, greed)
+    controls <- which(A == 0) 
+    controls <- controls[-which(controls == greed)]
+  }
+  return(list(Match.pairs = match, Propensity = pscore_bp))
+}
+result3 = pscorematch_bp(data = mydata2_bp, A = mydata2_bp$Treatment)
+print(result3$Match.pairs)
+print(result3$Propensity)
+reatment <- mydata2_bp$Treatment[unlist(sapply(result3$Match.pairs, function(x) x[1]))]
+control <- mydata2_bp$Treatment[unlist(sapply(result3$Match.pairs, function(x) x[2]))]
+numerator <- abs(mean(treatment) - mean(control))
+denominator <- sqrt((sd(treatment)^2 + sd(control)^2)/2)
+smd <- numerator/denominator
+smd
+```
+b
+ap
+```{r}
+  treatment <- mydata2_ap$Tot.Soc.Time[unlist(sapply(result2$Match.pairs, function(x) x[1]))]
+  control <- mydata2_ap$Tot.Soc.Time[unlist(sapply(result2$Match.pairs, function(x) x[2]))]
+  ate <- mean(treatment) - mean(control)
+  n <- length(result1$Match.pairs)
+  n_treatment <- length(treatment)
+  n_control <- length(control)
+  sd <- sqrt(var(treatment) / n_treatment + var(control) / n_control)
+  standard_error <- sd / sqrt(n)
+  t_stat <- ate / standard_error
+  df <- n - 1
+  p_value <- 2 * pt(-abs(t_stat), df)
+  print(ate)
+  print(sd)
+  print(p_value)
+
+```
+h0= a and p have no difference.h1 a and p have difference p < 0.05 reject h0 . intervention A (persuasion) have effective to reduce the daily total
+social screen time in comparison to the placebo P
+
+b
+bp
+```{r}
+treatment <- mydata2_bp$Tot.Soc.Time[unlist(sapply(result2$Match.pairs, function(x) x[1]))]
+control <- mydata2_bp$Tot.Soc.Time[unlist(sapply(result2$Match.pairs, function(x) x[2]))]
+  ate <- mean(treatment) - mean(control)
+  n <- length(result1$Match.pairs)
+  n_treatment <- length(treatment)
+  n_control <- length(control)
+  sd <- sqrt(var(treatment) / n_treatment + var(control) / n_control)
+  standard_error <- sd / sqrt(n)
+  t_stat <- ate / standard_error
+  df <- n - 1
+  p_value <- 2 * pt(-abs(t_stat), df)
+  print(ate)
+  print(sd)
+  print(p_value)
+```
+h0= b and p have no difference.h1 b and p have difference p < 0.05 reject h0 . intervention B (competition) have effective to reduce the daily total
+social screen time in comparison to the placebo P
+
+c
+```{r}
+library(tableone)
+formula <- Treatment ~ sex + age + pets + siblings
+prop_ap_model <- glm(formula, family=binomial(), data=mydata2_ap)
+prop_ap_fitted <- prop_ap_model$fitted
+repeat_ap <- Match(Tr=mydata2_ap$Treatment, M=1, X=logit(pscore_ap), replace=FALSE, caliper=0.1)
+matched_ap <- mydata2_ap[unlist(repeat_ap[c("index.treated","index.control")]),]
+var <- c("Tot.Soc.Time")
+matched_tab_ap <- CreateTableOne(vars=var, strata="Treatment", data=matched_ap, test=TRUE)
+print(matched_tab_ap, smd=TRUE)
+
+prop_bp_model <- glm(formula, family=binomial(), data=mydata2_bp)
+prop_bp_fitted <- prop_bp_model$fitted
+repeat_bp <- Match(Tr=mydata2_bp$Treatment, M=1, X=logit(prop_bp_fitted), replace=FALSE, caliper=0.1)
+matched_out_bp <- mydata2_bp[unlist(repeat_bp[c("index.treated","index.control")]),]
+var <- c("Tot.Soc.Time")
+matched_tab_bp <- CreateTableOne(vars=var, strata="Treatment", data=matched_out_bp, test=TRUE)
+print(matched_tab_bp, smd=TRUE)
+```
+
+
+
+
+problem 4
+```{r}
+merge_sub <- mydata2[mydata2$Treatment != "P",]
+merge_sub$Treatment <- ifelse(merge_sub$Treatment == "A", 1, 0)
+
+regression_model <- lm(Tot.Soc.Time ~ Treatment + sex + age + pets + siblings, data=merge_sub)
+summary(regression_model)
+
+```
+pvalue of treatment< 0.05 is sinificant,the adjusted differential treatment effect statistically significant
+
+b
+```{r}
+ipw_model <- glm(Treatment ~ sex + age + pets + siblings,
+                 family=binomial(link="logit"), data=merge_sub)
+propens <- ipw_model$fitted
+w <- 1/propens
+wbar <- 1/(1-propens)
+ipw_diff_treat <- sum(w*merge_sub$Treatment*merge_sub$Tot.Soc.Time)/sum(w*merge_sub$Treatment) -
+  sum(wbar*(1-merge_sub$Treatment)*merge_sub$Tot.Soc.Time)/sum(wbar*(1-merge_sub$Treatment))
+print(ipw_diff_treat)
+```
+c
+Multiple Regression Analysis: Assumes that the model correctly specifies therelationship between the outcome and both the treatment and covariates.
+IPW Method: Relies on the correct specification of the propensity score model ratherthan the outcome model.
+Using the IPW method, the di!erential treatment e!ect is ≠85.90145, meaning that a person with an addition
+of treatment enjoys a reduced total social screen time by 86 minutes.
