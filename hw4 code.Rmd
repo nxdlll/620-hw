@@ -1,0 +1,203 @@
+---
+title: " caohong biostat hw4 "
+output: html_notebook
+---
+
+hong cao
+biostat hw4 code
+GITHUB LINK https://github.com/nxdlll/620-hw
+
+```{r}
+library(readxl)
+library(dplyr)
+library(purrr)
+screentime <- read_excel("ScreenTime-hw3Q3.xlsx", sheet="ScreenTime")
+baseline <- read_excel("ScreenTime-hw3Q3.xlsx", sheet="Baseline")
+data <- merge(screentime, baseline, by="pseudo_id")
+head(data)
+
+```
+a
+```{r}
+# focus on B
+dataB = data[data$Treatment == "B",]
+dataB$X = ifelse(dataB$Day == "Su" | dataB$Day == "Sa", 0, 1 )
+dataB$B = ifelse(dataB$Phase == "Baseline",  0, 1)
+head(dataB)
+```
+```{r}
+dataB$lagged_y = lag(dataB$Pickups, n = 1, default = NA)
+```
+
+```{r}
+id2 = dataB[dataB$pseudo_id == 2,]
+model2 = glm(Pickups ~ lagged_y + B + X, data = id2, family = poisson(link = "log"), offset = log(Tot.Scr.Time))
+summary(model2)
+```
+```{r}
+id3 = dataB[dataB$pseudo_id == 3,]
+model3 = glm(Pickups ~ lagged_y + B + X, data = id3, family = poisson(link = "log"), offset = log(Tot.Scr.Time))
+summary(model3)
+```
+```{r}
+id4 = dataB[dataB$pseudo_id == 4,]
+model4 = glm(Pickups ~ lagged_y + B + X, data = id4, family = poisson(link = "log"), offset = log(Tot.Scr.Time))
+summary(model4)
+```
+```{r}
+id5= dataB[dataB$pseudo_id == 5,]
+model5 = glm(Pickups ~ lagged_y + B + X, data = id5, family = poisson(link = "log"), offset = log(Tot.Scr.Time))
+summary(model5)
+```
+```{r}
+id8 = dataB[dataB$pseudo_id == 8,]
+model8 = glm(Pickups ~ lagged_y + B + X, data = id8, family = poisson(link = "log"), offset = log(Tot.Scr.Time))
+summary(model8)
+```
+```{r}
+id15 = dataB[dataB$pseudo_id == 15,]
+model15 = glm(Pickups ~ lagged_y + B + X, data = id15, family = poisson(link = "log"), offset = log(Tot.Scr.Time))
+summary(model15)
+```
+```{r}
+id16 = dataB[dataB$pseudo_id == 16,]
+model16= glm(Pickups ~ lagged_y + B + X, data = id16, family = poisson(link = "log"), offset = log(Tot.Scr.Time))
+summary(model16)
+```
+
+```{r}
+id18 = dataB[dataB$pseudo_id ==18,]
+model18 = glm(Pickups ~ lagged_y + B + X, data = id18, family = poisson(link = "log"), offset = log(Tot.Scr.Time))
+summary(model18)
+```
+b
+$$
+\mathrm{Var}(\hat{\beta}_{\text{meta}, j}) = \frac{1}{\frac{1}{\mathrm{Var}(\hat{\beta}_{1,j})} + \dots + \frac{1}{\mathrm{Var}(\hat{\beta}_{k,j})}}
+$$
+```{r}
+meta_estimates0 = 1/(1/(summary(model2)$coefficients[, "Std. Error"][1])^2 + 1/(summary(model3)$coefficients[, "Std. Error"][1])^2
+               + 1/(summary(model4)$coefficients[, "Std. Error"][1])^2 + 1/(summary(model5)$coefficients[, "Std. Error"][1])^2
+               + 1/(summary(model8)$coefficients[, "Std. Error"][1])^2 +  1/(summary(model15)$coefficients[, "Std. Error"][1])^2
+               + 1/(summary(model16)$coefficients[, "Std. Error"][1])^2)
+meta_estimates0
+```
+
+```{r}
+meta_estimates1 =1/(1/(summary(model2)$coefficients[, "Std. Error"][2])^2 + 1/(summary(model3)$coefficients[, "Std. Error"][2])^2
+               + 1/(summary(model4)$coefficients[, "Std. Error"][2])^2 + 1/(summary(model5)$coefficients[, "Std. Error"][2])^2
+               + 1/(summary(model8)$coefficients[, "Std. Error"][2])^2 +  1/(summary(model15)$coefficients[, "Std. Error"][2])^2
+               + 1/(summary(model16)$coefficients[, "Std. Error"][2])^2 )
+meta_estimates1
+```
+```{r}
+meta_estimates2=1/(1/(summary(model2)$coefficients[, "Std. Error"][3])^2 + 1/(summary(model3)$coefficients[, "Std. Error"][3])^2
+               + 1/(summary(model4)$coefficients[, "Std. Error"][3])^2 + 1/(summary(model5)$coefficients[, "Std. Error"][3])^2
+               + 1/(summary(model8)$coefficients[, "Std. Error"][3])^2 +  1/(summary(model15)$coefficients[, "Std. Error"][3])^2
+               + 1/(summary(model16)$coefficients[, "Std. Error"][3])^2 )
+
+
+meta_estimates2
+```
+
+```{r}
+meta_estimates3=1/(1/(summary(model2)$coefficients[, "Std. Error"][4])^2 + 1/(summary(model3)$coefficients[, "Std. Error"][4])^2
+               + 1/(summary(model4)$coefficients[, "Std. Error"][4])^2 + 1/(summary(model5)$coefficients[, "Std. Error"][4])^2
+               + 1/(summary(model8)$coefficients[, "Std. Error"][4])^2 +  1/(summary(model15)$coefficients[, "Std. Error"][4])^2
+               + 1/(summary(model16)$coefficients[, "Std. Error"][4])^2 )
+
+
+meta_estimates3
+
+```
+c
+```{r}
+modelall= glm(Pickups ~ lagged_y + B + X, data = dataB, family = poisson(link = "log"), offset = log(Tot.Scr.Time))
+summary(modelall)
+```
+$$
+H_{0}:\beta_2 \ne 0  \ \ H_{1}:\beta_2 = 0
+$$
+pvalue is  <2e-16 *** is significant reject h0 take h1. intervention B (competition) effective to reduce the daily number of pickups in comparison to
+the no intervention at the baseline 
+
+d
+
+Federated Learning Lacks Flexibility
+Federated Learning may be Communication Expensive
+Summary statistics to be shared are always the same types, regardless
+of statistical problems: point estimate and its variance (or std err).
+Meta learning assumes (i) independent samples from different study
+sites ; (ii) homogeneous target model parameters across study sites,
+which may be violated
+In the literature, oftentimes local model specifications allow to be
+different, which should not be taken for granted for the sake of
+interpretability.
+
+
+problem3 
+a
+```{r}
+dataA = data[data$Treatment != "P" ,]
+dataA$X <- ifelse(dataA$Day == "Su" | dataA$Day == "Sa", 0, 1 )
+dataA$B <- ifelse(dataA$Phase == "Baseline",  0, 1)
+dataA$lagged_y = lag(dataA$Pickups, n = 1, default = NA)
+head(dataA)
+```
+```{r}
+pA = dataA[dataA$Treatment == "A",]
+pB = dataA[dataA$Treatment == "B",]
+```
+
+```{r}
+M1 = glm(Pickups ~ lagged_y + B + X +sex + age + pets + siblings, data = pA, family = poisson(link = "log"), offset = log(Tot.Scr.Time))
+summary(M1)
+```
+```{r}
+M2 = glm(Pickups ~ lagged_y + B + X +sex + age + pets + siblings, data = pB, family = poisson(link = "log"), offset = log(Tot.Scr.Time))
+summary(M2)
+```
+```{r}
+meta_estimates_Intercept=1/(1/(summary(M1)$coefficients[, "Std. Error"][1])^2 + 1/(summary(M2)$coefficients[, "Std. Error"][1])^2)
+meta_estimatesIntercept
+```
+```{r}
+meta_estimates_lagged_y =1/(1/(summary(M1)$coefficients[, "Std. Error"][2])^2 + 1/(summary(M2)$coefficients[, "Std. Error"][2])^2)
+meta_estimates_lagged_y
+```
+```{r}
+meta_estimates_B =1/(1/(summary(M1)$coefficients[, "Std. Error"][3])^2 + 1/(summary(M2)$coefficients[, "Std. Error"][3])^2)
+meta_estimates_B
+```
+```{r}
+meta_estimates_X =1/(1/(summary(M1)$coefficients[, "Std. Error"][4])^2 + 1/(summary(M2)$coefficients[, "Std. Error"][4])^2)
+meta_estimates_X
+```
+```{r}
+meta_estimates_sex =1/(1/(summary(M1)$coefficients[, "Std. Error"][5])^2 + 1/(summary(M2)$coefficients[, "Std. Error"][5])^2)
+meta_estimates_sex
+```
+```{r}
+meta_estimates_age =1/(1/(summary(M1)$coefficients[, "Std. Error"][6])^2 + 1/(summary(M2)$coefficients[, "Std. Error"][6])^2)
+meta_estimates_age
+```
+```{r}
+meta_estimates_pets =1/(1/(summary(M1)$coefficients[, "Std. Error"][7])^2 + 1/(summary(M2)$coefficients[, "Std. Error"][7])^2)
+meta_estimates_pets
+```
+
+```{r}
+meta_estimates_sibilings =1/(1/(summary(M1)$coefficients[, "Std. Error"][8])^2 + 1/(summary(M2)$coefficients[, "Std. Error"][8])^2)
+meta_estimates_sibilings
+```
+b
+in both model pvalue of B is < 0.05 is significant ,intervention reduced daily number of pickups
+
+c
+```{r}
+M3 = glm(Pickups ~ lagged_y + B + X +sex + age + pets + siblings, data = dataA, family = poisson(link = "log"), offset = log(Tot.Scr.Time))
+summary(M3)
+```
+ pvalue of B is < 0.05 is significant ,intervention reduced daily number of pickups
+ 
+ d
+ for part b, we need to build a GLM for intervention A and intervention B separately then combined A and B to perform meta learning.for partc, we do not need to calculate intervention A and B separately
